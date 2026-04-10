@@ -95,11 +95,13 @@ const swaggerOptions = {
       version: '1.0.0',
       description: 'API for managing menu items, orders, users, and GitHub OAuth authentication'
     },
-    servers: [
-      {
-        url: 'http://localhost:3000'
-      }
-    ],
+   servers: [
+  {
+    url: process.env.NODE_ENV === 'production'
+      ? 'https://restaurant-api-dg7p.onrender.com'
+      : 'http://localhost:3000'
+  }
+],
     components: {
       securitySchemes: {
         cookieAuth: {
