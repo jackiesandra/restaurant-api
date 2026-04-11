@@ -264,6 +264,18 @@ app.get('/', (req, res) => {
   res.send('Restaurant API is running');
 });
 
+/**
+ * @swagger
+ * /menuItems:
+ *   get:
+ *     summary: Get all menu items
+ *     description: Retrieves all menu items from the database.
+ *     responses:
+ *       200:
+ *         description: A list of menu items
+ *       500:
+ *         description: Server error
+ */
 app.get('/menuItems', async (req, res) => {
   try {
     const db = mongodb.getDb();
@@ -274,6 +286,29 @@ app.get('/menuItems', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /menuItems/{id}:
+ *   get:
+ *     summary: Get one menu item by ID
+ *     description: Retrieves a single menu item by its ID.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Menu item ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Menu item found
+ *       400:
+ *         description: Invalid menu item ID
+ *       404:
+ *         description: Menu item not found
+ *       500:
+ *         description: Server error
+ */
 app.get('/menuItems/:id', async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -294,6 +329,55 @@ app.get('/menuItems/:id', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /menuItems:
+ *   post:
+ *     summary: Create a new menu item
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *               category:
+ *                 type: string
+ *               ingredients:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               available:
+ *                 type: boolean
+ *               createdAt:
+ *                 type: string
+ *             example:
+ *               name: Tacos
+ *               description: Mexican tacos with beef
+ *               price: 9.99
+ *               category: Mexican
+ *               ingredients: ["tortilla", "meat"]
+ *               available: true
+ *               createdAt: 2026-04-10
+ *     responses:
+ *       201:
+ *         description: Menu item created successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 app.post('/menuItems', isAuthenticated, async (req, res) => {
   try {
     const menuItem = req.body;
@@ -315,6 +399,56 @@ app.post('/menuItems', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /menuItems/{id}:
+ *   put:
+ *     summary: Update a menu item
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Menu item ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *               category:
+ *                 type: string
+ *               ingredients:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               available:
+ *                 type: boolean
+ *               createdAt:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Menu item updated successfully
+ *       400:
+ *         description: Invalid ID or validation error
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Menu item not found
+ *       500:
+ *         description: Server error
+ */
 app.put('/menuItems/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -346,6 +480,33 @@ app.put('/menuItems/:id', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /menuItems/{id}:
+ *   delete:
+ *     summary: Delete a menu item
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Menu item ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Menu item deleted successfully
+ *       400:
+ *         description: Invalid menu item ID
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Menu item not found
+ *       500:
+ *         description: Server error
+ */
 app.delete('/menuItems/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -366,6 +527,18 @@ app.delete('/menuItems/:id', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /orders:
+ *   get:
+ *     summary: Get all orders
+ *     description: Retrieves all orders from the database.
+ *     responses:
+ *       200:
+ *         description: A list of orders
+ *       500:
+ *         description: Server error
+ */
 app.get('/orders', async (req, res) => {
   try {
     const db = mongodb.getDb();
@@ -376,6 +549,29 @@ app.get('/orders', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /orders/{id}:
+ *   get:
+ *     summary: Get one order by ID
+ *     description: Retrieves a single order by its ID.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Order ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Order found
+ *       400:
+ *         description: Invalid order ID
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Server error
+ */
 app.get('/orders/:id', async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -396,6 +592,52 @@ app.get('/orders/:id', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /orders:
+ *   post:
+ *     summary: Create a new order
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               customerName:
+ *                 type: string
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               total:
+ *                 type: number
+ *               status:
+ *                 type: string
+ *               orderType:
+ *                 type: string
+ *               createdAt:
+ *                 type: string
+ *             example:
+ *               customerName: Sandra Rodriguez
+ *               items: ["Tacos", "Soda"]
+ *               total: 12.99
+ *               status: Pending
+ *               orderType: Dine-In
+ *               createdAt: 2026-04-10
+ *     responses:
+ *       201:
+ *         description: Order created successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 app.post('/orders', isAuthenticated, async (req, res) => {
   try {
     const order = req.body;
@@ -417,6 +659,54 @@ app.post('/orders', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /orders/{id}:
+ *   put:
+ *     summary: Update an order
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Order ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               customerName:
+ *                 type: string
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               total:
+ *                 type: number
+ *               status:
+ *                 type: string
+ *               orderType:
+ *                 type: string
+ *               createdAt:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Order updated successfully
+ *       400:
+ *         description: Invalid ID or validation error
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Server error
+ */
 app.put('/orders/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -448,6 +738,33 @@ app.put('/orders/:id', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /orders/{id}:
+ *   delete:
+ *     summary: Delete an order
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Order ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Order deleted successfully
+ *       400:
+ *         description: Invalid order ID
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Server error
+ */
 app.delete('/orders/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -468,6 +785,18 @@ app.delete('/orders/:id', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /customers:
+ *   get:
+ *     summary: Get all customers
+ *     description: Retrieves all customers from the database.
+ *     responses:
+ *       200:
+ *         description: A list of customers
+ *       500:
+ *         description: Server error
+ */
 app.get('/customers', async (req, res) => {
   try {
     const db = mongodb.getDb();
@@ -478,6 +807,29 @@ app.get('/customers', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /customers/{id}:
+ *   get:
+ *     summary: Get one customer by ID
+ *     description: Retrieves a single customer by its ID.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Customer ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer found
+ *       400:
+ *         description: Invalid customer ID
+ *       404:
+ *         description: Customer not found
+ *       500:
+ *         description: Server error
+ */
 app.get('/customers/:id', async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -498,6 +850,53 @@ app.get('/customers/:id', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /customers:
+ *   post:
+ *     summary: Create a new customer
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               loyaltyLevel:
+ *                 type: string
+ *               active:
+ *                 type: boolean
+ *               createdAt:
+ *                 type: string
+ *             example:
+ *               firstName: Sandra
+ *               lastName: Rodriguez
+ *               email: sandra@email.com
+ *               phone: 812-555-1234
+ *               loyaltyLevel: Gold
+ *               active: true
+ *               createdAt: 2026-04-10
+ *     responses:
+ *       201:
+ *         description: Customer created successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 app.post('/customers', isAuthenticated, async (req, res) => {
   try {
     const customer = req.body;
@@ -519,6 +918,54 @@ app.post('/customers', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /customers/{id}:
+ *   put:
+ *     summary: Update a customer
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Customer ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               loyaltyLevel:
+ *                 type: string
+ *               active:
+ *                 type: boolean
+ *               createdAt:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Customer updated successfully
+ *       400:
+ *         description: Invalid ID or validation error
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Customer not found
+ *       500:
+ *         description: Server error
+ */
 app.put('/customers/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -550,6 +997,33 @@ app.put('/customers/:id', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /customers/{id}:
+ *   delete:
+ *     summary: Delete a customer
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Customer ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer deleted successfully
+ *       400:
+ *         description: Invalid customer ID
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Customer not found
+ *       500:
+ *         description: Server error
+ */
 app.delete('/customers/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -570,6 +1044,18 @@ app.delete('/customers/:id', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /reviews:
+ *   get:
+ *     summary: Get all reviews
+ *     description: Retrieves all reviews from the database.
+ *     responses:
+ *       200:
+ *         description: A list of reviews
+ *       500:
+ *         description: Server error
+ */
 app.get('/reviews', async (req, res) => {
   try {
     const db = mongodb.getDb();
@@ -580,6 +1066,29 @@ app.get('/reviews', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /reviews/{id}:
+ *   get:
+ *     summary: Get one review by ID
+ *     description: Retrieves a single review by its ID.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Review ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Review found
+ *       400:
+ *         description: Invalid review ID
+ *       404:
+ *         description: Review not found
+ *       500:
+ *         description: Server error
+ */
 app.get('/reviews/:id', async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -600,6 +1109,50 @@ app.get('/reviews/:id', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /reviews:
+ *   post:
+ *     summary: Create a new review
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               customerName:
+ *                 type: string
+ *               menuItem:
+ *                 type: string
+ *               rating:
+ *                 type: number
+ *               comment:
+ *                 type: string
+ *               approved:
+ *                 type: boolean
+ *               createdAt:
+ *                 type: string
+ *             example:
+ *               customerName: Sandra Rodriguez
+ *               menuItem: Tacos
+ *               rating: 5
+ *               comment: Amazing food and service
+ *               approved: true
+ *               createdAt: 2026-04-10
+ *     responses:
+ *       201:
+ *         description: Review created successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 app.post('/reviews', isAuthenticated, async (req, res) => {
   try {
     const review = req.body;
@@ -621,6 +1174,52 @@ app.post('/reviews', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /reviews/{id}:
+ *   put:
+ *     summary: Update a review
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Review ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               customerName:
+ *                 type: string
+ *               menuItem:
+ *                 type: string
+ *               rating:
+ *                 type: number
+ *               comment:
+ *                 type: string
+ *               approved:
+ *                 type: boolean
+ *               createdAt:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Review updated successfully
+ *       400:
+ *         description: Invalid ID or validation error
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Review not found
+ *       500:
+ *         description: Server error
+ */
 app.put('/reviews/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -652,6 +1251,33 @@ app.put('/reviews/:id', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /reviews/{id}:
+ *   delete:
+ *     summary: Delete a review
+ *     description: Protected route. Requires login.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Review ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Review deleted successfully
+ *       400:
+ *         description: Invalid review ID
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Review not found
+ *       500:
+ *         description: Server error
+ */
 app.delete('/reviews/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
