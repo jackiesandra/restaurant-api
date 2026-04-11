@@ -20,20 +20,23 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'supersecret',
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
-      collectionName: 'sessions'
-    }),
-    cookie: {
-      maxAge: 1000 * 60 * 60 * 24
-    }
-  })
-);
+const sessionConfig = {
+  secret: process.env.SESSION_SECRET || 'supersecret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24
+  }
+};
+
+if (process.env.NODE_ENV !== 'test') {
+  sessionConfig.store = MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    collectionName: 'sessions'
+  });
+}
+
+app.use(session(sessionConfig));
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -93,15 +96,16 @@ const swaggerOptions = {
     info: {
       title: 'Restaurant API',
       version: '1.0.0',
-      description: 'API for managing menu items, orders, users, and GitHub OAuth authentication'
+      description: 'API for managing menu items, orders, customers, reviews, users, and GitHub OAuth authentication'
     },
-   servers: [
-  {
-    url: process.env.NODE_ENV === 'production'
-      ? 'https://restaurant-api-dg7p.onrender.com'
-      : 'http://localhost:3000'
-  }
-],
+    servers: [
+      {
+        url:
+          process.env.NODE_ENV === 'production'
+            ? 'https://restaurant-api-dg7p.onrender.com'
+            : 'http://localhost:3000'
+      }
+    ],
     components: {
       securitySchemes: {
         cookieAuth: {
@@ -182,6 +186,70 @@ function validateOrder(order) {
   return errors;
 }
 
+function validateCustomer(customer) {
+  const errors = [];
+
+  if (!customer.firstName || typeof customer.firstName !== 'string' || customer.firstName.trim() === '') {
+    errors.push('First name is required and must be a string.');
+  }
+
+  if (!customer.lastName || typeof customer.lastName !== 'string' || customer.lastName.trim() === '') {
+    errors.push('Last name is required and must be a string.');
+  }
+
+  if (!customer.email || typeof customer.email !== 'string' || customer.email.trim() === '') {
+    errors.push('Email is required and must be a string.');
+  }
+
+  if (!customer.phone || typeof customer.phone !== 'string' || customer.phone.trim() === '') {
+    errors.push('Phone is required and must be a string.');
+  }
+
+  if (!customer.loyaltyLevel || typeof customer.loyaltyLevel !== 'string' || customer.loyaltyLevel.trim() === '') {
+    errors.push('Loyalty level is required and must be a string.');
+  }
+
+  if (typeof customer.active !== 'boolean') {
+    errors.push('Active is required and must be true or false.');
+  }
+
+  if (!customer.createdAt || typeof customer.createdAt !== 'string' || customer.createdAt.trim() === '') {
+    errors.push('CreatedAt is required and must be a string.');
+  }
+
+  return errors;
+}
+
+function validateReview(review) {
+  const errors = [];
+
+  if (!review.customerName || typeof review.customerName !== 'string' || review.customerName.trim() === '') {
+    errors.push('Customer name is required and must be a string.');
+  }
+
+  if (!review.menuItem || typeof review.menuItem !== 'string' || review.menuItem.trim() === '') {
+    errors.push('Menu item is required and must be a string.');
+  }
+
+  if (review.rating === undefined || typeof review.rating !== 'number') {
+    errors.push('Rating is required and must be a number.');
+  }
+
+  if (!review.comment || typeof review.comment !== 'string' || review.comment.trim() === '') {
+    errors.push('Comment is required and must be a string.');
+  }
+
+  if (typeof review.approved !== 'boolean') {
+    errors.push('Approved is required and must be true or false.');
+  }
+
+  if (!review.createdAt || typeof review.createdAt !== 'string' || review.createdAt.trim() === '') {
+    errors.push('CreatedAt is required and must be a string.');
+  }
+
+  return errors;
+}
+
 /**
  * @swagger
  * /:
@@ -196,18 +264,6 @@ app.get('/', (req, res) => {
   res.send('Restaurant API is running');
 });
 
-/**
- * @swagger
- * /menuItems:
- *   get:
- *     summary: Get all menu items
- *     description: Retrieves all menu items from the database.
- *     responses:
- *       200:
- *         description: A list of menu items
- *       500:
- *         description: Server error
- */
 app.get('/menuItems', async (req, res) => {
   try {
     const db = mongodb.getDb();
@@ -218,29 +274,6 @@ app.get('/menuItems', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /menuItems/{id}:
- *   get:
- *     summary: Get one menu item by ID
- *     description: Retrieves a single menu item by its ID.
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: Menu item ID
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Menu item found
- *       400:
- *         description: Invalid menu item ID
- *       404:
- *         description: Menu item not found
- *       500:
- *         description: Server error
- */
 app.get('/menuItems/:id', async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -261,55 +294,6 @@ app.get('/menuItems/:id', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /menuItems:
- *   post:
- *     summary: Create a new menu item
- *     description: Protected route. Requires login.
- *     security:
- *       - cookieAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *               price:
- *                 type: number
- *               category:
- *                 type: string
- *               ingredients:
- *                 type: array
- *                 items:
- *                   type: string
- *               available:
- *                 type: boolean
- *               createdAt:
- *                 type: string
- *             example:
- *               name: Grilled Chicken Plate
- *               description: Grilled chicken served with rice and vegetables
- *               price: 12.99
- *               category: Lunch
- *               ingredients: ["chicken", "rice", "vegetables"]
- *               available: true
- *               createdAt: 2026-04-07
- *     responses:
- *       201:
- *         description: Menu item created successfully
- *       400:
- *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error
- */
 app.post('/menuItems', isAuthenticated, async (req, res) => {
   try {
     const menuItem = req.body;
@@ -331,56 +315,6 @@ app.post('/menuItems', isAuthenticated, async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /menuItems/{id}:
- *   put:
- *     summary: Update a menu item
- *     description: Protected route. Requires login.
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: Menu item ID
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *               price:
- *                 type: number
- *               category:
- *                 type: string
- *               ingredients:
- *                 type: array
- *                 items:
- *                   type: string
- *               available:
- *                 type: boolean
- *               createdAt:
- *                 type: string
- *     responses:
- *       200:
- *         description: Menu item updated successfully
- *       400:
- *         description: Invalid ID or validation error
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Menu item not found
- *       500:
- *         description: Server error
- */
 app.put('/menuItems/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -412,33 +346,6 @@ app.put('/menuItems/:id', isAuthenticated, async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /menuItems/{id}:
- *   delete:
- *     summary: Delete a menu item
- *     description: Protected route. Requires login.
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: Menu item ID
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Menu item deleted successfully
- *       400:
- *         description: Invalid menu item ID
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Menu item not found
- *       500:
- *         description: Server error
- */
 app.delete('/menuItems/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -459,18 +366,6 @@ app.delete('/menuItems/:id', isAuthenticated, async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /orders:
- *   get:
- *     summary: Get all orders
- *     description: Retrieves all orders from the database.
- *     responses:
- *       200:
- *         description: A list of orders
- *       500:
- *         description: Server error
- */
 app.get('/orders', async (req, res) => {
   try {
     const db = mongodb.getDb();
@@ -481,29 +376,6 @@ app.get('/orders', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /orders/{id}:
- *   get:
- *     summary: Get one order by ID
- *     description: Retrieves a single order by its ID.
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: Order ID
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Order found
- *       400:
- *         description: Invalid order ID
- *       404:
- *         description: Order not found
- *       500:
- *         description: Server error
- */
 app.get('/orders/:id', async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -524,52 +396,6 @@ app.get('/orders/:id', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /orders:
- *   post:
- *     summary: Create a new order
- *     description: Protected route. Requires login.
- *     security:
- *       - cookieAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               customerName:
- *                 type: string
- *               items:
- *                 type: array
- *                 items:
- *                   type: string
- *               total:
- *                 type: number
- *               status:
- *                 type: string
- *               orderType:
- *                 type: string
- *               createdAt:
- *                 type: string
- *             example:
- *               customerName: Sandra Rodriguez
- *               items: ["Grilled Chicken Plate", "Coke"]
- *               total: 15.99
- *               status: Pending
- *               orderType: Dine-In
- *               createdAt: 2026-04-07
- *     responses:
- *       201:
- *         description: Order created successfully
- *       400:
- *         description: Validation error
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error
- */
 app.post('/orders', isAuthenticated, async (req, res) => {
   try {
     const order = req.body;
@@ -591,54 +417,6 @@ app.post('/orders', isAuthenticated, async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /orders/{id}:
- *   put:
- *     summary: Update an order
- *     description: Protected route. Requires login.
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: Order ID
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               customerName:
- *                 type: string
- *               items:
- *                 type: array
- *                 items:
- *                   type: string
- *               total:
- *                 type: number
- *               status:
- *                 type: string
- *               orderType:
- *                 type: string
- *               createdAt:
- *                 type: string
- *     responses:
- *       200:
- *         description: Order updated successfully
- *       400:
- *         description: Invalid ID or validation error
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Order not found
- *       500:
- *         description: Server error
- */
 app.put('/orders/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -670,33 +448,6 @@ app.put('/orders/:id', isAuthenticated, async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /orders/{id}:
- *   delete:
- *     summary: Delete an order
- *     description: Protected route. Requires login.
- *     security:
- *       - cookieAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: Order ID
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Order deleted successfully
- *       400:
- *         description: Invalid order ID
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Order not found
- *       500:
- *         description: Server error
- */
 app.delete('/orders/:id', isAuthenticated, async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -717,6 +468,210 @@ app.delete('/orders/:id', isAuthenticated, async (req, res) => {
   }
 });
 
+app.get('/customers', async (req, res) => {
+  try {
+    const db = mongodb.getDb();
+    const result = await db.collection('customers').find().toArray();
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/customers/:id', async (req, res) => {
+  try {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid customer ID' });
+    }
+
+    const db = mongodb.getDb();
+    const customerId = new ObjectId(req.params.id);
+    const result = await db.collection('customers').findOne({ _id: customerId });
+
+    if (!result) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/customers', isAuthenticated, async (req, res) => {
+  try {
+    const customer = req.body;
+    const errors = validateCustomer(customer);
+
+    if (errors.length > 0) {
+      return res.status(400).json({ errors });
+    }
+
+    const db = mongodb.getDb();
+    const result = await db.collection('customers').insertOne(customer);
+
+    res.status(201).json({
+      message: 'Customer created successfully',
+      insertedId: result.insertedId
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.put('/customers/:id', isAuthenticated, async (req, res) => {
+  try {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid customer ID' });
+    }
+
+    const updatedCustomer = req.body;
+    const errors = validateCustomer(updatedCustomer);
+
+    if (errors.length > 0) {
+      return res.status(400).json({ errors });
+    }
+
+    const db = mongodb.getDb();
+    const customerId = new ObjectId(req.params.id);
+
+    const result = await db.collection('customers').replaceOne(
+      { _id: customerId },
+      updatedCustomer
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    res.status(200).json({ message: 'Customer updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete('/customers/:id', isAuthenticated, async (req, res) => {
+  try {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid customer ID' });
+    }
+
+    const db = mongodb.getDb();
+    const customerId = new ObjectId(req.params.id);
+    const result = await db.collection('customers').deleteOne({ _id: customerId });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    res.status(200).json({ message: 'Customer deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/reviews', async (req, res) => {
+  try {
+    const db = mongodb.getDb();
+    const result = await db.collection('reviews').find().toArray();
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get('/reviews/:id', async (req, res) => {
+  try {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid review ID' });
+    }
+
+    const db = mongodb.getDb();
+    const reviewId = new ObjectId(req.params.id);
+    const result = await db.collection('reviews').findOne({ _id: reviewId });
+
+    if (!result) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/reviews', isAuthenticated, async (req, res) => {
+  try {
+    const review = req.body;
+    const errors = validateReview(review);
+
+    if (errors.length > 0) {
+      return res.status(400).json({ errors });
+    }
+
+    const db = mongodb.getDb();
+    const result = await db.collection('reviews').insertOne(review);
+
+    res.status(201).json({
+      message: 'Review created successfully',
+      insertedId: result.insertedId
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.put('/reviews/:id', isAuthenticated, async (req, res) => {
+  try {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid review ID' });
+    }
+
+    const updatedReview = req.body;
+    const errors = validateReview(updatedReview);
+
+    if (errors.length > 0) {
+      return res.status(400).json({ errors });
+    }
+
+    const db = mongodb.getDb();
+    const reviewId = new ObjectId(req.params.id);
+
+    const result = await db.collection('reviews').replaceOne(
+      { _id: reviewId },
+      updatedReview
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    res.status(200).json({ message: 'Review updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete('/reviews/:id', isAuthenticated, async (req, res) => {
+  try {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid review ID' });
+    }
+
+    const db = mongodb.getDb();
+    const reviewId = new ObjectId(req.params.id);
+    const result = await db.collection('reviews').deleteOne({ _id: reviewId });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    res.status(200).json({ message: 'Review deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.use('/users', userRoutes);
 app.use('/auth', authRoutes);
 
@@ -725,13 +680,17 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal server error' });
 });
 
-mongodb.initDb((err) => {
-  if (err) {
-    console.error('Error connecting to DB:', err);
-  } else {
-    console.log('Connected to MongoDB');
-    app.listen(port, () => {
-      console.log(`Server running on port ${port}`);
-    });
-  }
-});
+if (process.env.NODE_ENV !== 'test') {
+  mongodb.initDb((err) => {
+    if (err) {
+      console.error('Error connecting to DB:', err);
+    } else {
+      console.log('Connected to MongoDB');
+      app.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+      });
+    }
+  });
+}
+
+module.exports = app;

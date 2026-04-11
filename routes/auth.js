@@ -11,9 +11,12 @@ const router = express.Router();
  *     description: Redirects the user to GitHub OAuth login.
  *     responses:
  *       302:
- *         description: Redirect to GitHub
+ *         description: Redirect to GitHub OAuth
  */
-router.get('/login', passport.authenticate('github', { scope: ['user:email'] }));
+router.get(
+  '/login',
+  passport.authenticate('github', { scope: ['user:email'] })
+);
 
 /**
  * @swagger
@@ -39,7 +42,7 @@ router.get(
  * @swagger
  * /auth/me:
  *   get:
- *     summary: Current logged in user
+ *     summary: Get current logged-in user
  *     description: Returns the currently authenticated user.
  *     responses:
  *       200:
@@ -49,7 +52,9 @@ router.get(
  */
 router.get('/me', (req, res) => {
   if (!req.isAuthenticated || !req.isAuthenticated()) {
-    return res.status(401).json({ message: 'Not logged in' });
+    return res.status(401).json({
+      message: 'Not logged in'
+    });
   }
 
   res.status(200).json({
@@ -75,7 +80,9 @@ router.get('/logout', (req, res, next) => {
     }
 
     req.session.destroy(() => {
-      res.status(200).json({ message: 'Logged out successfully' });
+      res.status(200).json({
+        message: 'Logged out successfully'
+      });
     });
   });
 });
@@ -91,7 +98,9 @@ router.get('/logout', (req, res, next) => {
  *         description: Authentication failed
  */
 router.get('/failure', (req, res) => {
-  res.status(401).json({ message: 'GitHub authentication failed' });
+  res.status(401).json({
+    message: 'GitHub authentication failed'
+  });
 });
 
 module.exports = router;
